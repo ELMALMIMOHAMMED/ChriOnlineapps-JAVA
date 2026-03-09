@@ -6,11 +6,11 @@ public class JsonUtil {
     public static String toJson(Message m) {
 
         String json = "{"
-                + "\"type\":\"" + m.type + "\","
-                + "\"requestId\":\"" + m.requestId + "\","
-                + "\"status\":\"" + (m.status == null ? "" : m.status) + "\","
-                + "\"payload\":\"" + (m.payload == null ? "" : m.payload) + "\","
-                + "\"errorCode\":\"" + (m.errorCode == null ? "" : m.errorCode) + "\""
+                + "\"type\":\"" + safe(m.getType()) + "\","
+                + "\"requestId\":\"" + safe(m.getRequestId()) + "\","
+                + "\"status\":\"" + safe(m.getStatus()) + "\","
+                + "\"payload\":\"" + safe(m.getPayload()) + "\","
+                + "\"errorCode\":\"" + safe(m.getErrorCode()) + "\""
                 + "}";
 
         return json;
@@ -21,11 +21,11 @@ public class JsonUtil {
 
         Message m = new Message();
 
-        m.type = getValue(json, "type");
-        m.requestId = getValue(json, "requestId");
-        m.status = getValue(json, "status");
-        m.payload = getValue(json, "payload");
-        m.errorCode = getValue(json, "errorCode");
+        m.setType(getValue(json, "type"));
+        m.setRequestId(getValue(json, "requestId"));
+        m.setStatus(getValue(json, "status"));
+        m.setPayload(getValue(json, "payload"));
+        m.setErrorCode(getValue(json, "errorCode"));
 
         return m;
     }
@@ -37,16 +37,23 @@ public class JsonUtil {
 
         int start = json.indexOf(search);
 
-        if (start == -1)
+        if (start == -1) {
             return "";
+        }
 
         start = start + search.length();
 
         int end = json.indexOf("\"", start);
 
-        if (end == -1)
+        if (end == -1) {
             return "";
+        }
 
         return json.substring(start, end);
+    }
+
+    // Évite les valeurs null
+    private static String safe(String value) {
+        return value == null ? "" : value;
     }
 }
