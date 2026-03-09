@@ -5,35 +5,26 @@ import java.net.Socket;
 
 public class ServerMain {
 
-    // Port du serveur
-    private static final int PORT = 6000;
-
     public static void main(String[] args) {
 
-        System.out.println("Starting server...");
+        int port = 6000;
 
         try {
+            ServerSocket serverSocket = new ServerSocket(port);
 
-            // Création du serveur
-            ServerSocket serverSocket = new ServerSocket(PORT);
+            System.out.println("Server started on port " + port);
 
-            System.out.println("Server started on port " + PORT);
-
-            // Boucle infinie pour accepter les clients
             while (true) {
 
                 System.out.println("Waiting for client connection...");
 
-                // accepter un client
                 Socket clientSocket = serverSocket.accept();
 
                 System.out.println("Client connected : " + clientSocket.getInetAddress());
 
-                // créer un handler pour gérer ce client
                 ClientHandler handler = new ClientHandler(clientSocket);
 
-                // lancer le thread
-                handler.start();
+                new Thread(handler).start();
             }
 
         } catch (Exception e) {
