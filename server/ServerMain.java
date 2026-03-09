@@ -10,13 +10,15 @@ public class ServerMain {
         int port = 6000;
 
         try {
+
             ServerSocket serverSocket = new ServerSocket(port);
 
+            System.out.println("=================================");
             System.out.println("Server started on port " + port);
+            System.out.println("Waiting for client connections...");
+            System.out.println("=================================");
 
-            while (true) {
-
-                System.out.println("Waiting for client connection...");
+            while(true) {
 
                 Socket clientSocket = serverSocket.accept();
 
@@ -27,7 +29,7 @@ public class ServerMain {
                 new Thread(handler).start();
             }
 
-        } catch (Exception e) {
+        } catch(Exception e) {
             e.printStackTrace();
         }
     }
