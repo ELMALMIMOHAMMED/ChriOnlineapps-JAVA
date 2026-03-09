@@ -13,6 +13,15 @@ public class RequestRouter {
 
         switch(message.getType()) {
 
+            case "PING":
+                return new Message(
+                        "PING",
+                        message.getRequestId(),
+                        "SUCCESS",
+                        "PONG",
+                        ""
+                );
+
             case "LOGIN":
                 return AuthService.login(message);
 
