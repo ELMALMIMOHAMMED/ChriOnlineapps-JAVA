@@ -1,51 +1,79 @@
 package server;
 
+import common.JsonUtil;
+import common.Message;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-public class ClientHandler extends Thread {
+public class ClientHandler implements Runnable {
 
-    private Socket socket;
+    private final Socket socket;
 
     public ClientHandler(Socket socket) {
         this.socket = socket;
     }
 
+    @Override
     public void run() {
+        System.out.println("Client handler started for: " + socket.getInetAddress());
 
-        try {
-
-            BufferedReader input = new BufferedReader(
+        try (
+            BufferedReader in = new BufferedReader(
                     new InputStreamReader(socket.getInputStream()));
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true)
+        ) {
+            String rawMessage;
 
-            PrintWriter output = new PrintWriter(
-                    socket.getOutputStream(), true);
+            while ((rawMessage = in.readLine()) != null) {
+                System.out.println("Raw message received: " + rawMessage);
 
-            String message;
+                Message requestMessage;
+                Message responseMessage;
 
-            while ((message = input.readLine()) != null) {
+                try {
+                    requestMessage = JsonUtil.fromJson(rawMessage);
 
-                System.out.println("Message received : " + message);
+                    if (requestMessage == null) {
+                        responseMessage = new Message(
+                                "ERROR",
+                                "0",
+                                "ERROR",
+                                "",
+                                "INVALID_MESSAGE"
+                        );
+                    } else {
+                        responseMessage = RequestRouter.route(requestMessage);
+                    }
 
-                // convertir JSON en objet Message
-                common.Message request = common.JsonUtil.fromJson(message);
+                } catch (Exception e) {
+                    responseMessage = new Message(
+                            "ERROR",
+                            "0",
+                            "ERROR",
+                            "",
+                            "INVALID_JSON"
+                    );
+                }
 
-                // traiter la requête
-                common.Message response = RequestRouter.route(request);
+                String jsonResponse = JsonUtil.toJson(responseMessage);
+                out.println(jsonResponse);
 
-                // convertir en JSON
-                String jsonResponse = common.JsonUtil.toJson(response);
-
-                // envoyer la réponse
-                output.println(jsonResponse); 
+                System.out.println("Response sent: " + jsonResponse);
             }
 
         } catch (Exception e) {
-
-            System.out.println("Client disconnected");
-
+            System.out.println("Connection error with client: " + socket.getInetAddress());
+            System.out.println("Error: " + e.getMessage());
+        } finally {
+            try {
+                socket.close();
+                System.out.println("Client disconnected: " + socket.getInetAddress());
+            } catch (Exception e) {
+                System.out.println("Error while closing socket: " + e.getMessage());
+            }
         }
     }
 }
