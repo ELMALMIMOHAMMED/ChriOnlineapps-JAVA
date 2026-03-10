@@ -14,9 +14,7 @@ public class TestClient {
 
         try {
 
-            // connexion au serveur
             Socket socket = new Socket("localhost", 6000);
-
             System.out.println("Connected to server");
 
             BufferedReader input =
@@ -26,21 +24,32 @@ public class TestClient {
             PrintWriter output =
                     new PrintWriter(socket.getOutputStream(), true);
 
-            // création message PING
-            Message message = Message.request("PING", "1", "");
+            BufferedReader console =
+                    new BufferedReader(
+                            new InputStreamReader(System.in));
 
-            // convertir en JSON
-            String json = JsonUtil.toJson(message);
+            while (true) {
 
-            // envoyer au serveur
-            output.println(json);
+                System.out.print("Enter command (PING / LOGIN / EXIT): ");
+                String command = console.readLine();
 
-            // lire la réponse
-            String response = input.readLine();
+                if(command.equalsIgnoreCase("EXIT")) {
+                    break;
+                }
 
-            System.out.println("Server response : " + response);
+                Message message = Message.request(command, "1", "");
+
+                String json = JsonUtil.toJson(message);
+
+                output.println(json);
+
+                String response = input.readLine();
+
+                System.out.println("Server response : " + response);
+            }
 
             socket.close();
+            System.out.println("Connection closed");
 
         } catch (Exception e) {
             e.printStackTrace();
