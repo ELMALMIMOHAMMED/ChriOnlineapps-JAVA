@@ -1,22 +1,29 @@
 package common;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class JsonUtil {
 
-    // Convertir un objet Message en texte JSON
+    // =============================
+    // 🔹 Message → JSON
+    // =============================
     public static String toJson(Message m) {
 
         String json = "{"
                 + "\"type\":\"" + safe(m.getType()) + "\","
                 + "\"requestId\":\"" + safe(m.getRequestId()) + "\","
                 + "\"status\":\"" + safe(m.getStatus()) + "\","
-                + "\"payload\":\"" + safe(m.getPayload()) + "\","
+                + "\"payload\":\"" + escape(safe(m.getPayload())) + "\","
                 + "\"errorCode\":\"" + safe(m.getErrorCode()) + "\""
                 + "}";
 
         return json;
     }
 
-    // Convertir JSON en objet Message
+    // =============================
+    // 🔹 JSON → Message
+    // =============================
     public static Message fromJson(String json) {
 
         Message m = new Message();
@@ -24,13 +31,49 @@ public class JsonUtil {
         m.setType(getValue(json, "type"));
         m.setRequestId(getValue(json, "requestId"));
         m.setStatus(getValue(json, "status"));
-        m.setPayload(getValue(json, "payload"));
+        m.setPayload(unescape(getValue(json, "payload"))); // 🔥 important
         m.setErrorCode(getValue(json, "errorCode"));
 
         return m;
     }
 
-    // Fonction pour extraire une valeur JSON
+    // =============================
+    // 🔥 NOUVEAU : JSON → Map
+    // =============================
+    public static Map<String, String> toMap(String json) {
+
+        Map<String, String> map = new HashMap<>();
+
+        if (json == null || json.isEmpty()) return map;
+
+        json = json.trim();
+
+        // enlever { }
+        if (json.startsWith("{") && json.endsWith("}")) {
+            json = json.substring(1, json.length() - 1);
+        }
+
+        String[] pairs = json.split(",");
+
+        for (String pair : pairs) {
+
+            String[] kv = pair.split(":");
+
+            if (kv.length == 2) {
+
+                String key = kv[0].replace("\"", "").trim();
+                String value = kv[1].replace("\"", "").trim();
+
+                map.put(key, value);
+            }
+        }
+
+        return map;
+    }
+
+    // =============================
+    // 🔹 Extraction simple
+    // =============================
     private static String getValue(String json, String key) {
 
         String search = "\"" + key + "\":\"";
@@ -52,7 +95,20 @@ public class JsonUtil {
         return json.substring(start, end);
     }
 
-    // Évite les valeurs null
+    // =============================
+    // 🔥 Escape JSON
+    // =============================
+    private static String escape(String value) {
+        return value.replace("\"", "\\\"");
+    }
+
+    private static String unescape(String value) {
+        return value.replace("\\\"", "\"");
+    }
+
+    // =============================
+    // 🔹 Null safe
+    // =============================
     private static String safe(String value) {
         return value == null ? "" : value;
     }
