@@ -4,6 +4,7 @@ import common.Message;
 import common.JsonUtil;
 import services.AuthService;
 import services.CommandeService;
+import services.ProductService;
 import models.Commande;
 
 import java.util.List;
@@ -50,6 +51,18 @@ public class RequestRouter {
 
                 case "REGISTER":
                     return AuthService.register(message);
+
+                // =========================
+                // 🔹 PRODUCTS
+                // =========================
+                case "PRODUCT_LIST":
+                    return ProductService.list(message);
+
+                case "PRODUCT_DETAILS":
+                    return ProductService.details(message);
+
+                case "STOCK_UPDATE":
+                    return ProductService.updateStock(message);
 
                 // =========================
                 // 🔹 CREATE COMMANDE

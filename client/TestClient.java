@@ -31,10 +31,14 @@ public class TestClient {
                 System.out.println("\nChoisir une commande :");
                 System.out.println("1. PING");
                 System.out.println("2. LOGIN");
-                System.out.println("3. CREATE_COMMANDE");
-                System.out.println("4. GET_COMMANDES");
-                System.out.println("5. VALIDER_COMMANDE");
-                System.out.println("6. ANNULER_COMMANDE");
+                System.out.println("3. REGISTER");
+                System.out.println("4. PRODUCT_LIST");
+                System.out.println("5. PRODUCT_DETAILS");
+                System.out.println("6. STOCK_UPDATE");
+                System.out.println("7. CREATE_COMMANDE");
+                System.out.println("8. GET_COMMANDES");
+                System.out.println("9. VALIDER_COMMANDE");
+                System.out.println("10. ANNULER_COMMANDE");
                 System.out.println("0. EXIT");
 
                 System.out.print("Choix: ");
@@ -55,6 +59,29 @@ public class TestClient {
                         break;
 
                     case "3":
+                        message = Message.request("REGISTER", "3", "");
+                        break;
+
+                    case "4":
+                        message = Message.request("PRODUCT_LIST", "4", "");
+                        break;
+
+                    case "5":
+                        System.out.print("Product ID: ");
+                        String productId = console.readLine();
+                        message = Message.request("PRODUCT_DETAILS", "5", productId);
+                        break;
+
+                    case "6":
+                        System.out.print("Product ID: ");
+                        String updateId = console.readLine();
+                        System.out.print("New stock: ");
+                        String stock = console.readLine();
+                        String stockPayload = "{\"id\":\"" + updateId + "\",\"stock\":" + stock + "}";
+                        message = Message.request("STOCK_UPDATE", "6", stockPayload);
+                        break;
+
+                    case "7":
                         System.out.print("User ID: ");
                         String userId = console.readLine();
 
@@ -63,28 +90,28 @@ public class TestClient {
 
                         String payloadCreate = "{\"userId\":\"" + userId + "\",\"produits\":\"" + produits + "\"}";
 
-                        message = Message.request("CREATE_COMMANDE", "3", payloadCreate);
+                        message = Message.request("CREATE_COMMANDE", "7", payloadCreate);
                         break;
 
-                    case "4":
+                    case "8":
                         System.out.print("User ID: ");
                         String userGet = console.readLine();
 
-                        message = Message.request("GET_COMMANDES", "4", userGet);
+                        message = Message.request("GET_COMMANDES", "8", userGet);
                         break;
 
-                    case "5":
+                    case "9":
                         System.out.print("ID commande: ");
                         String idVal = console.readLine();
 
-                        message = Message.request("VALIDER_COMMANDE", "5", idVal);
+                        message = Message.request("VALIDER_COMMANDE", "9", idVal);
                         break;
 
-                    case "6":
+                    case "10":
                         System.out.print("ID commande: ");
                         String idAnn = console.readLine();
 
-                        message = Message.request("ANNULER_COMMANDE", "6", idAnn);
+                        message = Message.request("ANNULER_COMMANDE", "10", idAnn);
                         break;
 
                     default:
