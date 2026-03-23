@@ -5,29 +5,29 @@ import common.JsonUtil;
 
 import models.Commande;
 import models.Paiement;
+import models.Produit;
 
 import services.AuthService;
 import services.CommandeService;
 import services.PaiementService;
+import services.PanierService;
 
 import java.util.List;
 import java.util.Map;
 
 public class RequestRouter {
 
-    // 🔥 SERVICE PAIEMENT
     private static PaiementService paiementService = new PaiementService();
+    private static PanierService panierService = new PanierService();
 
     public static Message route(Message message) {
 
-        // 🔒 Vérification message null
         if (message == null) {
             return new Message("ERROR", "0", "ERROR", "", "NULL_MESSAGE");
         }
 
         try {
 
-            // 🔥 sécurisation du type
             String rawType = message.getType();
             if (rawType == null || rawType.trim().isEmpty()) {
                 return new Message("UNKNOWN", message.getRequestId(), "ERROR", "", "EMPTY_TYPE");
@@ -41,13 +41,7 @@ public class RequestRouter {
                 // 🔹 TEST
                 // =========================
                 case "PING":
-                    return new Message(
-                            type,
-                            message.getRequestId(),
-                            "SUCCESS",
-                            "PONG",
-                            ""
-                    );
+                    return new Message(type, message.getRequestId(), "SUCCESS", "PONG", "");
 
                 // =========================
                 // 🔹 AUTH
@@ -59,42 +53,62 @@ public class RequestRouter {
                     return AuthService.register(message);
 
                 // =========================
-                // 🔹 CREATE COMMANDE
+                // 🔹 PANIER
+                // =========================
+                case "ADD_TO_CART":
+
+                    try {
+                        Map<String, String> data = JsonUtil.toMap(message.getPayload());
+
+                        int userId = Integer.parseInt(data.get("userId"));
+                        int produitId = Integer.parseInt(data.get("produitId"));
+                        int quantite = Integer.parseInt(data.get("quantite"));
+
+                        // 🔥 simulation produit (à remplacer plus tard par DB)
+                        Produit produit = new Produit(produitId, "Produit" + produitId, 100.0, 10);
+
+                        String result = panierService.ajouterProduitPanier(userId, produit, quantite);
+
+                        return success(type, message, result);
+
+                    } catch (Exception e) {
+                        return error(type, message, "INVALID_JSON");
+                    }
+
+                case "GET_CART":
+
+                    try {
+                        int userId = Integer.parseInt(message.getPayload());
+                        String panier = panierService.afficherPanier(userId);
+                        return success(type, message, panier);
+
+                    } catch (Exception e) {
+                        return error(type, message, "INVALID_PAYLOAD");
+                    }
+
+                case "REMOVE_FROM_CART":
+
+                    try {
+                        Map<String, String> data = JsonUtil.toMap(message.getPayload());
+
+                        int userId = Integer.parseInt(data.get("userId"));
+                        int produitId = Integer.parseInt(data.get("produitId"));
+
+                        String result = panierService.retirerProduitPanier(userId, produitId);
+
+                        return success(type, message, result);
+
+                    } catch (Exception e) {
+                        return error(type, message, "INVALID_JSON");
+                    }
+
+                // =========================
+                // 🔹 COMMANDE
                 // =========================
                 case "CREATE_COMMANDE":
 
                     try {
-                        String payload = message.getPayload();
-
-                        if (payload == null || payload.trim().isEmpty()) {
-                            return error(type, message, "EMPTY_PAYLOAD");
-                        }
-
-                        Map<String, String> data = JsonUtil.toMap(payload);
-
-                        if (data == null || data.isEmpty()) {
-                            return error(type, message, "INVALID_JSON");
-                        }
-
-                        // 🔥 VERSION AVEC PRODUITS
-                        if (data.containsKey("produits")) {
-
-                            if (!data.containsKey("userId")) {
-                                return error(type, message, "MISSING_USERID");
-                            }
-
-                            int userId = Integer.parseInt(data.get("userId"));
-                            String produits = data.get("produits");
-
-                            Commande cmd = CommandeService.createCommandeAvecProduits(userId, produits);
-
-                            return success(type, message, cmd.toJson());
-                        }
-
-                        // 🔥 VERSION SIMPLE
-                        if (!data.containsKey("userId") || !data.containsKey("total")) {
-                            return error(type, message, "MISSING_FIELDS");
-                        }
+                        Map<String, String> data = JsonUtil.toMap(message.getPayload());
 
                         int userId = Integer.parseInt(data.get("userId"));
                         double total = Double.parseDouble(data.get("total"));
@@ -107,47 +121,10 @@ public class RequestRouter {
                         return error(type, message, "INVALID_JSON");
                     }
 
-                // =========================
-                // 🔹 VALIDER COMMANDE
-                // =========================
-                case "VALIDER_COMMANDE":
-
-                    try {
-                        String payload = message.getPayload();
-
-                        if (payload == null || payload.trim().isEmpty()) {
-                            return error(type, message, "EMPTY_PAYLOAD");
-                        }
-
-                        int cmdId = Integer.parseInt(payload);
-
-                        boolean ok = CommandeService.validerCommande(cmdId);
-
-                        return new Message(
-                                type,
-                                message.getRequestId(),
-                                ok ? "SUCCESS" : "ERROR",
-                                ok ? "COMMANDE_VALIDEE" : "",
-                                ok ? "" : "NOT_FOUND"
-                        );
-
-                    } catch (Exception e) {
-                        return error(type, message, "INVALID_PAYLOAD");
-                    }
-
-                // =========================
-                // 🔹 GET COMMANDES
-                // =========================
                 case "GET_COMMANDES":
 
                     try {
-                        String payload = message.getPayload();
-
-                        if (payload == null || payload.trim().isEmpty()) {
-                            return error(type, message, "EMPTY_PAYLOAD");
-                        }
-
-                        int userId = Integer.parseInt(payload);
+                        int userId = Integer.parseInt(message.getPayload());
 
                         List<Commande> commandes = CommandeService.getCommandesByUser(userId);
 
@@ -165,56 +142,12 @@ public class RequestRouter {
                     }
 
                 // =========================
-                // 🔹 ANNULER COMMANDE
-                // =========================
-                case "ANNULER_COMMANDE":
-
-                    try {
-                        String payload = message.getPayload();
-
-                        if (payload == null || payload.trim().isEmpty()) {
-                            return error(type, message, "EMPTY_PAYLOAD");
-                        }
-
-                        int cmdId = Integer.parseInt(payload);
-
-                        boolean ok = CommandeService.annulerCommande(cmdId);
-
-                        return new Message(
-                                type,
-                                message.getRequestId(),
-                                ok ? "SUCCESS" : "ERROR",
-                                ok ? "COMMANDE_ANNULEE" : "",
-                                ok ? "" : "IMPOSSIBLE"
-                        );
-
-                    } catch (Exception e) {
-                        return error(type, message, "INVALID_PAYLOAD");
-                    }
-
-                // =========================
-                // 🔥 PAYMENT
+                // 🔥 PAIEMENT
                 // =========================
                 case "PAYMENT":
 
                     try {
-                        String payload = message.getPayload();
-
-                        if (payload == null || payload.trim().isEmpty()) {
-                            return error(type, message, "EMPTY_PAYLOAD");
-                        }
-
-                        Map<String, String> data = JsonUtil.toMap(payload);
-
-                        if (data == null || data.isEmpty()) {
-                            return error(type, message, "INVALID_JSON");
-                        }
-
-                        if (!data.containsKey("userId") ||
-                            !data.containsKey("commandeId") ||
-                            !data.containsKey("montant")) {
-                            return error(type, message, "MISSING_FIELDS");
-                        }
+                        Map<String, String> data = JsonUtil.toMap(message.getPayload());
 
                         int userId = Integer.parseInt(data.get("userId"));
                         int commandeId = Integer.parseInt(data.get("commandeId"));
@@ -222,14 +155,36 @@ public class RequestRouter {
 
                         Paiement paiement = paiementService.processPayment(userId, commandeId, montant);
 
-                        if (paiement != null) {
-                            return success(type, message, paiement.toString());
-                        } else {
-                            return error(type, message, "PAYMENT_FAILED");
-                        }
+                        return paiement != null
+                                ? success(type, message, paiement.toString())
+                                : error(type, message, "PAYMENT_FAILED");
 
                     } catch (Exception e) {
                         return error(type, message, "INVALID_JSON");
+                    }
+
+                // =========================
+                // 🔁 REMBOURSEMENT
+                // =========================
+                case "REFUND":
+
+                    try {
+                        int paiementId = Integer.parseInt(message.getPayload());
+
+                        Paiement p = paiementService.getPaiementById(paiementId);
+
+                        boolean ok = paiementService.rembourserPaiement(p);
+
+                        return new Message(
+                                type,
+                                message.getRequestId(),
+                                ok ? "SUCCESS" : "ERROR",
+                                ok ? "REFUNDED" : "",
+                                ok ? "" : "REFUND_FAILED"
+                        );
+
+                    } catch (Exception e) {
+                        return error(type, message, "INVALID_PAYLOAD");
                     }
 
                 // =========================
@@ -244,9 +199,6 @@ public class RequestRouter {
         }
     }
 
-    // =========================
-    // 🔧 HELPERS
-    // =========================
     private static Message error(String type, Message msg, String code) {
         return new Message(type, msg.getRequestId(), "ERROR", "", code);
     }
