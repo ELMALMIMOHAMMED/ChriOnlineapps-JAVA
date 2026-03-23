@@ -55,11 +55,31 @@ public class TestClient {
                         break;
 
                     case "2":
-                        message = Message.request("LOGIN", "2", "");
+                        System.out.print("Email: ");
+                        String email = console.readLine();
+                        System.out.print("Password: ");
+                        String password = console.readLine();
+                        String loginPayload = email + "," + password;
+                        message = Message.request("LOGIN", "2", loginPayload);
                         break;
 
                     case "3":
-                        message = Message.request("REGISTER", "3", "");
+                        System.out.print("ID: ");
+                        String id = console.readLine();
+                        System.out.print("Username: ");
+                        String username = console.readLine();
+                        System.out.print("Password: ");
+                        String regPassword = console.readLine();
+                        System.out.print("Email: ");
+                        String regEmail = console.readLine();
+                        System.out.print("Phone: ");
+                        String phone = console.readLine();
+                        System.out.print("Date (yyyy-MM-dd): ");
+                        String date = console.readLine();
+                        System.out.print("Role: ");
+                        String role = console.readLine();
+                        String registerPayload = id + "," + username + "," + regPassword + "," + regEmail + "," + phone + "," + date + "," + role;
+                        message = Message.request("REGISTER", "3", registerPayload);
                         break;
 
                     case "4":

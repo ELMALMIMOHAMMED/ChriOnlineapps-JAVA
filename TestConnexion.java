@@ -37,7 +37,7 @@ public class TestConnexion {
 			auth.registerUser(user);
 
 			// 6️⃣ Test login avec email
-			User loggedUser = auth.loginByEmail("louayhamouchi3@email.com", "louay1234");
+			User loggedUser = auth.loginByEmail("louayhamouchi3@gmail.com", "louay1234");
 
 			if (loggedUser != null) {
 				System.out.println("Utilisateur connecté : " + loggedUser.get_username());
