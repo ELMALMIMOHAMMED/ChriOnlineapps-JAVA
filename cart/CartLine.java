@@ -14,6 +14,12 @@ public class CartLine {
         this.unitPrice = product.getPrice();
     }
 
+    public CartLine(Product product, int quantity, double unitPrice) {
+        this.product = product;
+        this.quantity = quantity;
+        this.unitPrice = unitPrice;
+    }
+
     public double calculateSubtotal() {
         return quantity * unitPrice;
     }

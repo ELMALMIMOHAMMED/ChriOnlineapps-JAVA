@@ -62,8 +62,8 @@ public class RequestRouter {
                 case "PRODUCT_DETAILS":
                     return ProductService.details(message);
 
-                case "STOCK_UPDATE":
-                    return ProductService.updateStock(message);
+                case "PRODUCT_ORDER_STATUS":
+                    return ProductService.productOrderStatus(message);
 
                 // =========================
                 // 🔹 CART
@@ -80,7 +80,12 @@ public class RequestRouter {
                         String productId = data.get("productId");
                         int quantity = Integer.parseInt(data.get("quantity"));
 
-                        String result = CartService.addProduct(userId, productId, quantity);
+                        String result;
+                        try {
+                            result = CartService.addProduct(userId, productId, quantity);
+                        } catch (RuntimeException e) {
+                            return error(type, message, "DATABASE_ERROR");
+                        }
                         boolean ok = result.startsWith("SUCCESS");
                         return new Message(type, message.getRequestId(), ok ? "SUCCESS" : "ERROR", result, ok ? "" : "CART_ADD_FAILED");
                     } catch (Exception e) {
@@ -96,7 +101,11 @@ public class RequestRouter {
                         }
 
                         int userId = Integer.parseInt(payload.trim());
-                        return success(type, message, CartService.getCart(userId).toString());
+                        try {
+                            return success(type, message, CartService.getCart(userId).toString());
+                        } catch (RuntimeException e) {
+                            return error(type, message, "DATABASE_ERROR");
+                        }
                     } catch (Exception e) {
                         return error(type, message, "INVALID_PAYLOAD");
                     }
@@ -112,7 +121,11 @@ public class RequestRouter {
                         int userId = Integer.parseInt(data.get("userId"));
                         String productId = data.get("productId");
 
-                        return success(type, message, CartService.removeProduct(userId, productId));
+                        try {
+                            return success(type, message, CartService.removeProduct(userId, productId));
+                        } catch (RuntimeException e) {
+                            return error(type, message, "DATABASE_ERROR");
+                        }
                     } catch (Exception e) {
                         return error(type, message, "INVALID_PAYLOAD");
                     }
@@ -126,7 +139,11 @@ public class RequestRouter {
                         }
 
                         int userId = Integer.parseInt(payload.trim());
-                        return success(type, message, CartService.clearCart(userId));
+                        try {
+                            return success(type, message, CartService.clearCart(userId));
+                        } catch (RuntimeException e) {
+                            return error(type, message, "DATABASE_ERROR");
+                        }
                     } catch (Exception e) {
                         return error(type, message, "INVALID_PAYLOAD");
                     }
@@ -140,7 +157,12 @@ public class RequestRouter {
                         }
 
                         int userId = Integer.parseInt(payload.trim());
-                        Commande cmd = CartService.checkout(userId);
+                        Commande cmd;
+                        try {
+                            cmd = CartService.checkout(userId);
+                        } catch (RuntimeException e) {
+                            return error(type, message, "DATABASE_ERROR");
+                        }
                         if (cmd == null) {
                             return error(type, message, "CHECKOUT_FAILED");
                         }
@@ -177,7 +199,16 @@ public class RequestRouter {
                             int userId = Integer.parseInt(data.get("userId"));
                             String produits = data.get("produits");
 
-                            Commande cmd = CommandeService.createCommandeAvecProduits(userId, produits);
+                            Commande cmd;
+                            try {
+                                cmd = CommandeService.createCommandeAvecProduits(userId, produits);
+                            } catch (RuntimeException e) {
+                                return error(type, message, "DATABASE_ERROR");
+                            }
+
+                            if (cmd == null) {
+                                return error(type, message, "INSUFFICIENT_STOCK");
+                            }
 
                             return success(type, message, cmd.toJson());
                         }
@@ -190,7 +221,16 @@ public class RequestRouter {
                         int userId = Integer.parseInt(data.get("userId"));
                         double total = Double.parseDouble(data.get("total"));
 
-                        Commande cmd = CommandeService.createCommande(userId, total);
+                        Commande cmd;
+                        try {
+                            cmd = CommandeService.createCommande(userId, total);
+                        } catch (RuntimeException e) {
+                            return error(type, message, "DATABASE_ERROR");
+                        }
+
+                        if (cmd == null) {
+                            return error(type, message, "CREATE_FAILED");
+                        }
 
                         return success(type, message, cmd.toJson());
 
@@ -212,7 +252,12 @@ public class RequestRouter {
 
                         int cmdId = Integer.parseInt(payload);
 
-                        boolean ok = CommandeService.validerCommande(cmdId);
+                        boolean ok;
+                        try {
+                            ok = CommandeService.validerCommande(cmdId);
+                        } catch (RuntimeException e) {
+                            return error(type, message, "DATABASE_ERROR");
+                        }
 
                         return new Message(
                                 type,
@@ -240,7 +285,12 @@ public class RequestRouter {
 
                         int userId = Integer.parseInt(payload);
 
-                        List<Commande> commandes = CommandeService.getCommandesByUser(userId);
+                        List<Commande> commandes;
+                        try {
+                            commandes = CommandeService.getCommandesByUser(userId);
+                        } catch (RuntimeException e) {
+                            return error(type, message, "DATABASE_ERROR");
+                        }
 
                         StringBuilder json = new StringBuilder("[");
                         for (int i = 0; i < commandes.size(); i++) {
@@ -269,7 +319,12 @@ public class RequestRouter {
 
                         int cmdId = Integer.parseInt(payload);
 
-                        boolean ok = CommandeService.annulerCommande(cmdId);
+                        boolean ok;
+                        try {
+                            ok = CommandeService.annulerCommande(cmdId);
+                        } catch (RuntimeException e) {
+                            return error(type, message, "DATABASE_ERROR");
+                        }
 
                         return new Message(
                                 type,

@@ -37,7 +37,7 @@ public class TestClient {
                 System.out.println("3. REGISTER");
                 System.out.println("4. PRODUCT_LIST");
                 System.out.println("5. PRODUCT_DETAILS");
-                System.out.println("6. STOCK_UPDATE");
+                System.out.println("6. PRODUCT_ORDER_STATUS");
                 System.out.println("7. CREATE_COMMANDE");
                 System.out.println("8. GET_COMMANDES");
                 System.out.println("9. VALIDER_COMMANDE");
@@ -122,11 +122,8 @@ public class TestClient {
                 return Message.request("PRODUCT_DETAILS", "5", console.readLine());
 
             case "6":
-                System.out.print("Product ID: ");
-                String updateId = console.readLine();
-                System.out.print("New stock: ");
-                String stock = console.readLine();
-                return Message.request("STOCK_UPDATE", "6", "{\"id\":\"" + updateId + "\",\"stock\":\"" + stock + "\"}");
+                System.out.print("User ID: ");
+                return Message.request("PRODUCT_ORDER_STATUS", "6", console.readLine());
 
             case "7":
                 System.out.print("User ID: ");

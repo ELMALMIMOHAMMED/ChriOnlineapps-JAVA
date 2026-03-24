@@ -2,9 +2,13 @@ package services;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 import cart.Cart;
 import cart.CartLine;
+import common.BaseDonnees;
+import dao.CommandeDAO;
 import models.Commande;
 import models.LigneCommande;
 import product.Product;
@@ -12,40 +16,23 @@ import product.ProductRepository;
 
 public class CommandeService {
 
-    private static int compteur = 1;
-    private static List<Commande> commandes = new ArrayList<>();
-
     // =========================
     // 🔹 créer commande simple (compatibilité)
     // =========================
     public static Commande createCommande(int userId, double total) {
-
-        Commande cmd = new Commande(compteur++, userId);
-
-        // ligne fictive (temporaire)
-        LigneCommande ligne = new LigneCommande(
-            "GLOBAL",
-                "Commande globale",
-                1,
-                total
-        );
-
-        cmd.ajouterLigne(ligne);
-
-        commandes.add(cmd);
-
-        return cmd;
+        List<LigneCommande> lignes = new ArrayList<>();
+        lignes.add(new LigneCommande("GLOBAL", "Commande globale", 1, total));
+        return CommandeDAO.createCommande(userId, lignes);
     }
 
     // =========================
     // 🔥 créer commande avec produits (PRO)
     // =========================
     public static Commande createCommandeAvecProduits(int userId, String produitsData) {
+        try (Connection connection = BaseDonnees.getConnection()) {
+            connection.setAutoCommit(false);
 
-        Commande cmd = new Commande(compteur++, userId);
-
-        try {
-
+            List<LigneCommande> lignes = new ArrayList<>();
             String[] produits = produitsData.split(";");
 
             for (String p : produits) {
@@ -63,117 +50,98 @@ public class CommandeService {
                 String produitId = parts[0].trim();
                 int quantite = Integer.parseInt(parts[1]);
 
-                Product produit = ProductRepository.findById(produitId).orElse(null);
+                Product produit = ProductRepository.findById(connection, produitId).orElse(null);
                 if (produit == null) {
                     continue;
                 }
 
-                LigneCommande ligne = new LigneCommande(
+                int orderedQuantity = CommandeDAO.getOrderedQuantity(connection, produitId);
+                if (orderedQuantity + quantite > produit.getStock()) {
+                    connection.rollback();
+                    return null;
+                }
+
+                lignes.add(new LigneCommande(
                         produitId,
                         produit.getName(),
                         quantite,
                         produit.getPrice()
-                );
-
-                cmd.ajouterLigne(ligne);
+                ));
             }
 
-        } catch (Exception e) {
-            System.out.println("Erreur parsing produits");
+            Commande commande = CommandeDAO.createCommande(connection, userId, lignes);
+            connection.commit();
+            return commande;
+        } catch (SQLException e) {
+            throw new RuntimeException("Unable to create commande with products", e);
         }
-
-        commandes.add(cmd);
-
-        return cmd;
     }
 
     public static Commande createCommandeFromCart(int userId, Cart cart) {
-
-        Commande cmd = new Commande(compteur++, userId);
+        List<LigneCommande> lignes = new ArrayList<>();
 
         for (CartLine line : cart.getLines()) {
-            LigneCommande ligne = new LigneCommande(
+            lignes.add(new LigneCommande(
                     line.getProduct().getId(),
                     line.getProduct().getName(),
                     line.getQuantity(),
                     line.getUnitPrice()
-            );
-            cmd.ajouterLigne(ligne);
+            ));
         }
 
-        commandes.add(cmd);
-        return cmd;
+        return CommandeDAO.createCommande(userId, lignes);
+    }
+
+    public static Commande createCommandeFromCart(Connection connection, int userId, Cart cart) {
+        List<LigneCommande> lignes = new ArrayList<>();
+
+        for (CartLine line : cart.getLines()) {
+            lignes.add(new LigneCommande(
+                    line.getProduct().getId(),
+                    line.getProduct().getName(),
+                    line.getQuantity(),
+                    line.getUnitPrice()
+            ));
+        }
+
+        return CommandeDAO.createCommande(connection, userId, lignes);
     }
 
     // =========================
     // 🔹 valider commande
     // =========================
     public static boolean validerCommande(int id) {
-
-        for (Commande c : commandes) {
-
-            if (c.getId() == id) {
-
-                if (!c.getStatus().equals("EN_ATTENTE")) {
-                    return false;
-                }
-
-                c.setStatus("VALIDE");
-                return true;
-            }
+        Commande commande = CommandeDAO.getCommandeById(id);
+        if (commande == null || !"EN_ATTENTE".equals(commande.getStatus())) {
+            return false;
         }
 
-        return false;
+        return CommandeDAO.updateStatus(id, "VALIDE");
     }
 
     // =========================
     // 🔹 annuler commande
     // =========================
     public static boolean annulerCommande(int id) {
-
-        for (Commande c : commandes) {
-
-            if (c.getId() == id) {
-
-                if (c.getStatus().equals("VALIDE")) {
-                    return false; // déjà validée
-                }
-
-                c.setStatus("ANNULEE");
-                return true;
-            }
+        Commande commande = CommandeDAO.getCommandeById(id);
+        if (commande == null || "VALIDE".equals(commande.getStatus())) {
+            return false;
         }
 
-        return false;
+        return CommandeDAO.updateStatus(id, "ANNULEE");
     }
 
     // =========================
     // 🔹 récupérer commandes user
     // =========================
     public static List<Commande> getCommandesByUser(int userId) {
-
-        List<Commande> result = new ArrayList<>();
-
-        for (Commande c : commandes) {
-            if (c.getUserId() == userId) {
-                result.add(c);
-            }
-        }
-
-        return result;
+        return CommandeDAO.getCommandesByUser(userId);
     }
 
     // =========================
     // 🔹 récupérer commande par ID
     // =========================
     public static Commande getCommandeById(int id) {
-
-        for (Commande c : commandes) {
-            if (c.getId() == id) {
-                return c;
-            }
-        }
-
-        return null;
+        return CommandeDAO.getCommandeById(id);
     }
 }

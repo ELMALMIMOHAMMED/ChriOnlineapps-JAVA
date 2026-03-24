@@ -30,6 +30,11 @@ public class Cart {
         calculateTotal();
     }
 
+    public void addLine(CartLine line) {
+        lines.add(line);
+        calculateTotal();
+    }
+
     public void removeProduct(String productId) {
         lines.removeIf(line -> line.getProduct().getId().equals(productId));
         calculateTotal();
