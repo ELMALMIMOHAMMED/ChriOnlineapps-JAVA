@@ -60,8 +60,26 @@ public class ProductService {
      */
     public static Message updateStock(Message request) {
         try {
-            byte[] data = Base64.getDecoder().decode(request.getPayload());
-            UpdateStockRequest usr = JsonUtil.fromBinary(data, UpdateStockRequest.class);
+            UpdateStockRequest usr;
+
+            try {
+                byte[] data = Base64.getDecoder().decode(request.getPayload());
+                usr = JsonUtil.fromBinary(data, UpdateStockRequest.class);
+            } catch (Exception ignored) {
+                usr = null;
+            }
+
+            if (usr == null) {
+                java.util.Map<String, String> values = JsonUtil.toMap(request.getPayload());
+                if (values.isEmpty() || !values.containsKey("id") || !values.containsKey("stock")) {
+                    return new Message("STOCK_UPDATE", request.getRequestId(), "ERROR", "", "INVALID_PAYLOAD");
+                }
+
+                usr = new UpdateStockRequest();
+                usr.id = values.get("id");
+                usr.stock = Integer.parseInt(values.get("stock"));
+            }
+
             boolean ok = ProductRepository.updateStock(usr.id, usr.stock);
             if (ok) {
                 return new Message("STOCK_UPDATE", request.getRequestId(), "SUCCESS", "", "");

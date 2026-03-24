@@ -3,8 +3,12 @@ package services;
 import java.util.ArrayList;
 import java.util.List;
 
+import cart.Cart;
+import cart.CartLine;
 import models.Commande;
 import models.LigneCommande;
+import product.Product;
+import product.ProductRepository;
 
 public class CommandeService {
 
@@ -20,7 +24,7 @@ public class CommandeService {
 
         // ligne fictive (temporaire)
         LigneCommande ligne = new LigneCommande(
-                0,
+            "GLOBAL",
                 "Commande globale",
                 1,
                 total
@@ -46,20 +50,29 @@ public class CommandeService {
 
             for (String p : produits) {
 
+                if (p == null || p.trim().isEmpty()) {
+                    continue;
+                }
+
                 String[] parts = p.split(":");
 
-                int produitId = Integer.parseInt(parts[0]);
+                if (parts.length != 2) {
+                    continue;
+                }
+
+                String produitId = parts[0].trim();
                 int quantite = Integer.parseInt(parts[1]);
 
-                // 🔥 Simulation produit (à remplacer plus tard par ProduitService)
-                String nom = "Produit_" + produitId;
-                double prix = 100 * produitId;
+                Product produit = ProductRepository.findById(produitId).orElse(null);
+                if (produit == null) {
+                    continue;
+                }
 
                 LigneCommande ligne = new LigneCommande(
                         produitId,
-                        nom,
+                        produit.getName(),
                         quantite,
-                        prix
+                        produit.getPrice()
                 );
 
                 cmd.ajouterLigne(ligne);
@@ -71,6 +84,24 @@ public class CommandeService {
 
         commandes.add(cmd);
 
+        return cmd;
+    }
+
+    public static Commande createCommandeFromCart(int userId, Cart cart) {
+
+        Commande cmd = new Commande(compteur++, userId);
+
+        for (CartLine line : cart.getLines()) {
+            LigneCommande ligne = new LigneCommande(
+                    line.getProduct().getId(),
+                    line.getProduct().getName(),
+                    line.getQuantity(),
+                    line.getUnitPrice()
+            );
+            cmd.ajouterLigne(ligne);
+        }
+
+        commandes.add(cmd);
         return cmd;
     }
 

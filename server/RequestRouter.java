@@ -3,6 +3,7 @@ package server;
 import common.Message;
 import common.JsonUtil;
 import services.AuthService;
+import services.CartService;
 import services.CommandeService;
 import services.ProductService;
 import models.Commande;
@@ -63,6 +64,90 @@ public class RequestRouter {
 
                 case "STOCK_UPDATE":
                     return ProductService.updateStock(message);
+
+                // =========================
+                // 🔹 CART
+                // =========================
+                case "CART_ADD":
+
+                    try {
+                        Map<String, String> data = JsonUtil.toMap(message.getPayload());
+                        if (!data.containsKey("userId") || !data.containsKey("productId") || !data.containsKey("quantity")) {
+                            return error(type, message, "MISSING_FIELDS");
+                        }
+
+                        int userId = Integer.parseInt(data.get("userId"));
+                        String productId = data.get("productId");
+                        int quantity = Integer.parseInt(data.get("quantity"));
+
+                        String result = CartService.addProduct(userId, productId, quantity);
+                        boolean ok = result.startsWith("SUCCESS");
+                        return new Message(type, message.getRequestId(), ok ? "SUCCESS" : "ERROR", result, ok ? "" : "CART_ADD_FAILED");
+                    } catch (Exception e) {
+                        return error(type, message, "INVALID_PAYLOAD");
+                    }
+
+                case "CART_VIEW":
+
+                    try {
+                        String payload = message.getPayload();
+                        if (payload == null || payload.trim().isEmpty()) {
+                            return error(type, message, "EMPTY_PAYLOAD");
+                        }
+
+                        int userId = Integer.parseInt(payload.trim());
+                        return success(type, message, CartService.getCart(userId).toString());
+                    } catch (Exception e) {
+                        return error(type, message, "INVALID_PAYLOAD");
+                    }
+
+                case "CART_REMOVE":
+
+                    try {
+                        Map<String, String> data = JsonUtil.toMap(message.getPayload());
+                        if (!data.containsKey("userId") || !data.containsKey("productId")) {
+                            return error(type, message, "MISSING_FIELDS");
+                        }
+
+                        int userId = Integer.parseInt(data.get("userId"));
+                        String productId = data.get("productId");
+
+                        return success(type, message, CartService.removeProduct(userId, productId));
+                    } catch (Exception e) {
+                        return error(type, message, "INVALID_PAYLOAD");
+                    }
+
+                case "CART_CLEAR":
+
+                    try {
+                        String payload = message.getPayload();
+                        if (payload == null || payload.trim().isEmpty()) {
+                            return error(type, message, "EMPTY_PAYLOAD");
+                        }
+
+                        int userId = Integer.parseInt(payload.trim());
+                        return success(type, message, CartService.clearCart(userId));
+                    } catch (Exception e) {
+                        return error(type, message, "INVALID_PAYLOAD");
+                    }
+
+                case "CART_CHECKOUT":
+
+                    try {
+                        String payload = message.getPayload();
+                        if (payload == null || payload.trim().isEmpty()) {
+                            return error(type, message, "EMPTY_PAYLOAD");
+                        }
+
+                        int userId = Integer.parseInt(payload.trim());
+                        Commande cmd = CartService.checkout(userId);
+                        if (cmd == null) {
+                            return error(type, message, "CHECKOUT_FAILED");
+                        }
+                        return success(type, message, cmd.toJson());
+                    } catch (Exception e) {
+                        return error(type, message, "INVALID_PAYLOAD");
+                    }
 
                 // =========================
                 // 🔹 CREATE COMMANDE

@@ -60,6 +60,20 @@ public class Product implements Serializable {
 		this.stock = stock;
 	}
 
+	public boolean isAvailable(int quantity) {
+		return quantity > 0 && stock >= quantity;
+	}
+
+	public void decreaseStock(int quantity) {
+		if (quantity < 0) {
+			throw new IllegalArgumentException("Quantity cannot be negative");
+		}
+		if (!isAvailable(quantity)) {
+			throw new IllegalArgumentException("Insufficient stock for product " + id);
+		}
+		stock -= quantity;
+	}
+
 	@Override
 	public String toString() {
 		return "Product{" +

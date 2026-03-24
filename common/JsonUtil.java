@@ -31,11 +31,11 @@ public class JsonUtil {
     public static String toJson(Message m) {
 
         String json = "{"
-                + "\"type\":\"" + safe(m.getType()) + "\","
-                + "\"requestId\":\"" + safe(m.getRequestId()) + "\","
-                + "\"status\":\"" + safe(m.getStatus()) + "\","
-                + "\"payload\":\"" + safe(m.getPayload()) + "\","
-                + "\"errorCode\":\"" + safe(m.getErrorCode()) + "\""
+                + "\"type\":\"" + escape(safe(m.getType())) + "\","
+                + "\"requestId\":\"" + escape(safe(m.getRequestId())) + "\","
+                + "\"status\":\"" + escape(safe(m.getStatus())) + "\","
+                + "\"payload\":\"" + escape(safe(m.getPayload())) + "\","
+                + "\"errorCode\":\"" + escape(safe(m.getErrorCode())) + "\""
                 + "}";
 
         return json;
@@ -88,19 +88,6 @@ public class JsonUtil {
         }
 
         return map;
-    }
-
-    // Fonction pour extraire une valeur JSON
-    // Returns null if the field does not exist; empty string only for explicit empty values.
-    private static String getValue(String json, String key) {
-        if (json == null || json.isEmpty() || key == null || key.isEmpty()) {
-            return null;
-        }
-        Map<String, String> map = toMap(json);
-        if (!map.containsKey(key)) {
-            return null;
-        }
-        return map.get(key);
     }
 
     // Évite les valeurs null
@@ -161,7 +148,6 @@ public class JsonUtil {
         return "\"" + escape(obj.toString()) + "\"";
     }
 
-    @SuppressWarnings("unchecked")
     public static <T> T fromJson(String json, Class<T> clazz) {
         if (json == null || json.isEmpty()) {
             return null;

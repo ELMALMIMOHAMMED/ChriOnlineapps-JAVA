@@ -2,7 +2,7 @@ package models;
 
 public class LigneCommande {
 
-    private int produitId;
+    private String produitId;
     private String nomProduit;
     private int quantite;
     private double prixUnitaire;
@@ -11,7 +11,7 @@ public class LigneCommande {
     public LigneCommande() {}
 
     // 🔹 Constructeur complet
-    public LigneCommande(int produitId, String nomProduit, int quantite, double prixUnitaire) {
+    public LigneCommande(String produitId, String nomProduit, int quantite, double prixUnitaire) {
         this.produitId = produitId;
         this.nomProduit = nomProduit;
         this.quantite = quantite;
@@ -21,7 +21,7 @@ public class LigneCommande {
     // =========================
     // 🔹 Getters
     // =========================
-    public int getProduitId() {
+    public String getProduitId() {
         return produitId;
     }
 
@@ -40,7 +40,7 @@ public class LigneCommande {
     // =========================
     // 🔹 Setters
     // =========================
-    public void setProduitId(int produitId) {
+    public void setProduitId(String produitId) {
         this.produitId = produitId;
     }
 
@@ -68,7 +68,7 @@ public class LigneCommande {
     // =========================
     public String toJson() {
         return "{"
-                + "\"produitId\":" + produitId + ","
+                + "\"produitId\":\"" + produitId + "\"," 
                 + "\"nomProduit\":\"" + nomProduit + "\","
                 + "\"quantite\":" + quantite + ","
                 + "\"prixUnitaire\":" + prixUnitaire

@@ -56,8 +56,8 @@ public class Commande {
         lignes.add(ligne);
     }
 
-    public void supprimerLigne(int produitId) {
-        lignes.removeIf(l -> l.getProduitId() == produitId);
+    public void supprimerLigne(String produitId) {
+        lignes.removeIf(l -> l.getProduitId().equals(produitId));
     }
 
     // =========================

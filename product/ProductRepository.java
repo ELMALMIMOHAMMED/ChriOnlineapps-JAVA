@@ -14,9 +14,9 @@ public class ProductRepository {
 
     static {
         // populate with some sample data
-        PRODUCTS.add(new Product("001", "Widget", "A basic widget", 9.99, 100));
-        PRODUCTS.add(new Product("002", "Gadget", "A useful gadget", 19.99, 50));
-        PRODUCTS.add(new Product("003", "Doohickey", "An advanced doohickey", 29.99, 25));
+        PRODUCTS.add(new Product("001", "Product 1", "A basic widget", 9.99, 100));
+        PRODUCTS.add(new Product("002", "Product 2", "A useful gadget", 19.99, 50));
+        PRODUCTS.add(new Product("003", "Product 3", "An advanced doohickey", 29.99, 25));
     }
 
     public static List<Product> getAll() {
