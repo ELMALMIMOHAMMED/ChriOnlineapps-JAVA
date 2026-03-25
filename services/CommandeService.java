@@ -1,148 +1,165 @@
 package services;
 
-import java.util.ArrayList;
-import java.util.List;
+import database.DBConnection;
 
-import models.Commande;
-import models.LigneCommande;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
+/**
+ * Service Commande - version PRO sécurisée
+ */
 public class CommandeService {
 
-    private static int compteur = 1;
-    private static List<Commande> commandes = new ArrayList<>();
-
     // =========================
-    // 🔹 créer commande simple (compatibilité)
+    // 🔥 créer commande depuis panier (PRO)
     // =========================
-    public static Commande createCommande(int userId, double total) {
+    public int creerCommande(int userId) {
 
-        Commande cmd = new Commande(compteur++, userId);
+        if (userId <= 0) return -1;
 
-        // ligne fictive (temporaire)
-        LigneCommande ligne = new LigneCommande(
-                0,
-                "Commande globale",
-                1,
-                total
-        );
+        int commandeId = -1;
 
-        cmd.ajouterLigne(ligne);
+        try (Connection conn = DBConnection.getConnection()) {
 
-        commandes.add(cmd);
+            conn.setAutoCommit(false); // 🔥 TRANSACTION
 
-        return cmd;
-    }
+            // =========================
+            // 🔹 récupérer panier + prix (OPTIMISÉ)
+            // =========================
+            String panierSql =
+                    "SELECT pa.produit_id, pa.quantite, p.prix " +
+                    "FROM panier pa " +
+                    "JOIN produits p ON pa.produit_id = p.id " +
+                    "WHERE pa.user_id=?";
 
-    // =========================
-    // 🔥 créer commande avec produits (PRO)
-    // =========================
-    public static Commande createCommandeAvecProduits(int userId, String produitsData) {
+            PreparedStatement panierPs = conn.prepareStatement(panierSql);
+            panierPs.setInt(1, userId);
 
-        Commande cmd = new Commande(compteur++, userId);
+            ResultSet rs = panierPs.executeQuery();
 
-        try {
+            double total = 0;
 
-            String[] produits = produitsData.split(";");
-
-            for (String p : produits) {
-
-                String[] parts = p.split(":");
-
-                int produitId = Integer.parseInt(parts[0]);
-                int quantite = Integer.parseInt(parts[1]);
-
-                // 🔥 Simulation produit (à remplacer plus tard par ProduitService)
-                String nom = "Produit_" + produitId;
-                double prix = 100 * produitId;
-
-                LigneCommande ligne = new LigneCommande(
-                        produitId,
-                        nom,
-                        quantite,
-                        prix
-                );
-
-                cmd.ajouterLigne(ligne);
+            // 🔥 stocker temporairement
+            class Item {
+                int produitId;
+                int quantite;
+                double prix;
             }
 
+            java.util.List<Item> items = new java.util.ArrayList<>();
+
+            while (rs.next()) {
+                Item item = new Item();
+                item.produitId = rs.getInt("produit_id");
+                item.quantite = rs.getInt("quantite");
+                item.prix = rs.getDouble("prix");
+
+                total += item.prix * item.quantite;
+                items.add(item);
+            }
+
+            // ❌ panier vide
+            if (items.isEmpty()) {
+                return -1;
+            }
+
+            // =========================
+            // 🔹 créer commande
+            // =========================
+            String insertCmd =
+                    "INSERT INTO commandes(user_id, total, statut) VALUES (?, ?, ?)";
+
+            PreparedStatement cmdPs =
+                    conn.prepareStatement(insertCmd, PreparedStatement.RETURN_GENERATED_KEYS);
+
+            cmdPs.setInt(1, userId);
+            cmdPs.setDouble(2, total);
+            cmdPs.setString(3, "EN_ATTENTE");
+
+            cmdPs.executeUpdate();
+
+            ResultSet keys = cmdPs.getGeneratedKeys();
+            if (keys.next()) {
+                commandeId = keys.getInt(1);
+            }
+
+            // =========================
+            // 🔹 insertion items (batch)
+            // =========================
+            String insertItem =
+                    "INSERT INTO commande_items(commande_id, produit_id, quantite, prix) VALUES (?, ?, ?, ?)";
+
+            PreparedStatement itemPs = conn.prepareStatement(insertItem);
+
+            for (Item item : items) {
+
+                itemPs.setInt(1, commandeId);
+                itemPs.setInt(2, item.produitId);
+                itemPs.setInt(3, item.quantite);
+                itemPs.setDouble(4, item.prix);
+
+                itemPs.addBatch();
+            }
+
+            itemPs.executeBatch();
+
+            // =========================
+            // 🔹 vider panier
+            // =========================
+            String clearSql = "DELETE FROM panier WHERE user_id=?";
+            PreparedStatement clearPs = conn.prepareStatement(clearSql);
+            clearPs.setInt(1, userId);
+            clearPs.executeUpdate();
+
+            conn.commit(); // ✅ SUCCESS
+
         } catch (Exception e) {
-            System.out.println("Erreur parsing produits");
+            e.printStackTrace();
+            // ❌ rollback automatique si erreur (connection fermée)
+            return -1;
         }
 
-        commandes.add(cmd);
-
-        return cmd;
+        return commandeId;
     }
 
     // =========================
     // 🔹 valider commande
     // =========================
-    public static boolean validerCommande(int id) {
+    public boolean validerCommande(int commandeId) {
 
-        for (Commande c : commandes) {
+        try (Connection conn = DBConnection.getConnection()) {
 
-            if (c.getId() == id) {
+            String sql = "UPDATE commandes SET statut='VALIDE' WHERE id=? AND statut='EN_ATTENTE'";
+            PreparedStatement ps = conn.prepareStatement(sql);
 
-                if (!c.getStatus().equals("EN_ATTENTE")) {
-                    return false;
-                }
+            ps.setInt(1, commandeId);
 
-                c.setStatus("VALIDE");
-                return true;
-            }
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
-
-        return false;
     }
 
     // =========================
     // 🔹 annuler commande
     // =========================
-    public static boolean annulerCommande(int id) {
+    public boolean annulerCommande(int commandeId) {
 
-        for (Commande c : commandes) {
+        try (Connection conn = DBConnection.getConnection()) {
 
-            if (c.getId() == id) {
+            String sql = "UPDATE commandes SET statut='ANNULEE' WHERE id=? AND statut='EN_ATTENTE'";
+            PreparedStatement ps = conn.prepareStatement(sql);
 
-                if (c.getStatus().equals("VALIDE")) {
-                    return false; // déjà validée
-                }
+            ps.setInt(1, commandeId);
 
-                c.setStatus("ANNULEE");
-                return true;
-            }
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
-
-        return false;
-    }
-
-    // =========================
-    // 🔹 récupérer commandes user
-    // =========================
-    public static List<Commande> getCommandesByUser(int userId) {
-
-        List<Commande> result = new ArrayList<>();
-
-        for (Commande c : commandes) {
-            if (c.getUserId() == userId) {
-                result.add(c);
-            }
-        }
-
-        return result;
-    }
-
-    // =========================
-    // 🔹 récupérer commande par ID
-    // =========================
-    public static Commande getCommandeById(int id) {
-
-        for (Commande c : commandes) {
-            if (c.getId() == id) {
-                return c;
-            }
-        }
-
-        return null;
     }
 }
