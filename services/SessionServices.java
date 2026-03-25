@@ -1,6 +1,6 @@
 package services;
 
-public class SessionService {
+public class SessionServices {
 
     private static int currentUserId = -1;
     private static String currentEmail;

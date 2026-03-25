@@ -2,7 +2,11 @@ package models;
 
 import java.time.LocalDateTime;
 
-public class Paiement {
+/**
+ * @deprecated Use {@link Paiement} instead.
+ */
+@Deprecated
+public class Paiment {
 
     private int idPaiement;
     private int userId;
@@ -12,7 +16,7 @@ public class Paiement {
     private StatutPaiement statut;
 
     // 🔥 constructeur propre
-    public Paiement(int idPaiement, int userId, int idCommande, double montant) {
+    public Paiment(int idPaiement, int userId, int idCommande, double montant) {
         this.idPaiement = idPaiement;
         this.userId = userId;
         this.idCommande = idCommande;

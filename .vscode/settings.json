@@ -1,0 +1,7 @@
+{
+    "java.project.referencedLibraries": [
+        "lib/gson-2.10.1-bin.jar",
+        "lib/jbcrypt-0.4-bin.jar",
+        "lib/mysql-connector-j-9.6.0/mysql-connector-j-9.6.0.jar"
+    ]
+}

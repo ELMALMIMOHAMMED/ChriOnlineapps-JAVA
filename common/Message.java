@@ -36,6 +36,11 @@ public class Message {
         return payload;
     }
 
+    // Static factory method for request messages
+    public static Message request(String type, String requestId, String payload) {
+        return new Message(type, requestId, "REQUEST", payload, payload);
+    }
+
     // 🔥 IMPORTANT : JSON helper
     public String getJson() {
         if (payload != null && !payload.isEmpty()) return payload;
