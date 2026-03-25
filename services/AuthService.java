@@ -45,10 +45,12 @@ public class AuthService {
 
             String name = data.get("name").getAsString();
             String email = data.get("email").getAsString();
-            String phone = data.get("phone").getAsString();
             String password = data.get("password").getAsString();
 
             Connection c = DBConnection.getConnection();
+            if (c == null) {
+                return new Message("REGISTER_RES", "", "FAIL", "", "DB_DOWN");
+            }
 
             PreparedStatement check = c.prepareStatement(
                     "SELECT * FROM users WHERE email=?"
@@ -60,18 +62,18 @@ public class AuthService {
             }
 
             PreparedStatement insert = c.prepareStatement(
-                    "INSERT INTO users(name,email,phone,password) VALUES (?,?,?,?)"
+                    "INSERT INTO users(name,email,password) VALUES (?,?,?)"
             );
             insert.setString(1, name);
             insert.setString(2, email);
-            insert.setString(3, phone);
-            insert.setString(4, password);
+            insert.setString(3, password);
 
             insert.executeUpdate();
 
             return new Message("REGISTER_RES", "", "SUCCESS", "", "");
 
         } catch (Exception e) {
+            e.printStackTrace();
             return new Message("REGISTER_RES", "", "FAIL", "", "ERROR");
         }
     }

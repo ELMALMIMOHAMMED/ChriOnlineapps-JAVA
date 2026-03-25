@@ -99,7 +99,10 @@ public class RegisterPanel extends JPanel {
                     JOptionPane.showMessageDialog(this, "Compte créé avec succès !");
                     frame.showPage("LOGIN");
                 } else {
-                    JOptionPane.showMessageDialog(this, "Erreur inscription !");
+                    String reason = (response != null && response.getPayload() != null && !response.getPayload().isEmpty())
+                            ? response.getPayload()
+                            : "UNKNOWN";
+                    JOptionPane.showMessageDialog(this, "Erreur inscription: " + reason);
                 }
 
             } catch (Exception ex) {

@@ -1,5 +1,7 @@
 package server;
 
+import database.DBConnection;
+
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
@@ -14,6 +16,11 @@ public class ServerMain {
             Executors.newFixedThreadPool(20);
 
     public static void main(String[] args) {
+
+        if (!DBConnection.initializeDatabase()) {
+            System.out.println("❌ DB initialization failed. Server stopped.");
+            return;
+        }
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
 
