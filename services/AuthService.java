@@ -1,129 +1,78 @@
 package services;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import common.Message;
 import database.DBConnection;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.sql.*;
 
 public class AuthService {
 
-    // =========================
-    // LOGIN
-    // =========================
-    public static Message login(Message message) {
-        try (Connection conn = DBConnection.getConnection()) {
+    public static Message login(Message request) {
+        try {
+            JsonObject data = JsonParser.parseString(request.getJson()).getAsJsonObject();
 
-            JsonObject data = JsonParser.parseString(message.getPayload()).getAsJsonObject();
             String email = data.get("email").getAsString();
             String password = data.get("password").getAsString();
 
-            String sql = "SELECT id, nom, email FROM users WHERE email = ? AND password = ?";
-            PreparedStatement ps = conn.prepareStatement(sql);
+            Connection c = DBConnection.getConnection();
+
+            PreparedStatement ps = c.prepareStatement(
+                    "SELECT * FROM users WHERE email=? AND password=?"
+            );
             ps.setString(1, email);
             ps.setString(2, password);
 
             ResultSet rs = ps.executeQuery();
 
             if (rs.next()) {
-                JsonObject responseData = new JsonObject();
-                responseData.addProperty("userId", rs.getInt("id"));
-                responseData.addProperty("nom", rs.getString("nom"));
-                responseData.addProperty("email", rs.getString("email"));
+                JsonObject res = new JsonObject();
+                res.addProperty("userId", rs.getInt("id"));
 
-                return new Message(
-                        "LOGIN_RESPONSE",
-                        message.getRequestId(),
-                        "SUCCESS",
-                        responseData.toString(),
-                        ""
-                );
+                return new Message("LOGIN_RES", "", "SUCCESS", res.toString(), "");
             }
 
-            return new Message(
-                    "LOGIN_RESPONSE",
-                    message.getRequestId(),
-                    "FAIL",
-                    "",
-                    "INVALID_CREDENTIALS"
-            );
+            return new Message("LOGIN_RES", "", "FAIL", "", "INVALID");
 
         } catch (Exception e) {
-            e.printStackTrace();
-            return new Message(
-                    "LOGIN_RESPONSE",
-                    message.getRequestId(),
-                    "FAIL",
-                    "",
-                    "SERVER_ERROR"
-            );
+            return new Message("LOGIN_RES", "", "FAIL", "", "ERROR");
         }
     }
 
-    // =========================
-    // REGISTER
-    // =========================
-    public static Message register(Message message) {
-        try (Connection conn = DBConnection.getConnection()) {
+    public static Message register(Message request) {
+        try {
+            JsonObject data = JsonParser.parseString(request.getJson()).getAsJsonObject();
 
-            JsonObject data = JsonParser.parseString(message.getPayload()).getAsJsonObject();
-            String nom = data.get("nom").getAsString();
+            String name = data.get("name").getAsString();
             String email = data.get("email").getAsString();
+            String phone = data.get("phone").getAsString();
             String password = data.get("password").getAsString();
 
-            String checkSql = "SELECT id FROM users WHERE email = ?";
-            PreparedStatement checkPs = conn.prepareStatement(checkSql);
-            checkPs.setString(1, email);
+            Connection c = DBConnection.getConnection();
 
-            ResultSet rs = checkPs.executeQuery();
-            if (rs.next()) {
-                return new Message(
-                        "REGISTER_RESPONSE",
-                        message.getRequestId(),
-                        "FAIL",
-                        "",
-                        "EMAIL_ALREADY_EXISTS"
-                );
-            }
-
-            String insertSql = "INSERT INTO users(nom, email, password) VALUES (?, ?, ?)";
-            PreparedStatement insertPs = conn.prepareStatement(insertSql);
-            insertPs.setString(1, nom);
-            insertPs.setString(2, email);
-            insertPs.setString(3, password);
-
-            int rows = insertPs.executeUpdate();
-
-            if (rows > 0) {
-                return new Message(
-                        "REGISTER_RESPONSE",
-                        message.getRequestId(),
-                        "SUCCESS",
-                        "REGISTER_OK",
-                        ""
-                );
-            }
-
-            return new Message(
-                    "REGISTER_RESPONSE",
-                    message.getRequestId(),
-                    "FAIL",
-                    "",
-                    "REGISTER_FAILED"
+            PreparedStatement check = c.prepareStatement(
+                    "SELECT * FROM users WHERE email=?"
             );
+            check.setString(1, email);
+
+            if (check.executeQuery().next()) {
+                return new Message("REGISTER_RES", "", "FAIL", "", "EXISTS");
+            }
+
+            PreparedStatement insert = c.prepareStatement(
+                    "INSERT INTO users(name,email,phone,password) VALUES (?,?,?,?)"
+            );
+            insert.setString(1, name);
+            insert.setString(2, email);
+            insert.setString(3, phone);
+            insert.setString(4, password);
+
+            insert.executeUpdate();
+
+            return new Message("REGISTER_RES", "", "SUCCESS", "", "");
 
         } catch (Exception e) {
-            e.printStackTrace();
-            return new Message(
-                    "REGISTER_RESPONSE",
-                    message.getRequestId(),
-                    "FAIL",
-                    "",
-                    "SERVER_ERROR"
-            );
+            return new Message("REGISTER_RES", "", "FAIL", "", "ERROR");
         }
     }
 }

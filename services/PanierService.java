@@ -19,56 +19,19 @@ public class PanierService {
     }
 
     // =========================
-    // AJOUT PRODUIT
+    // GET PANIER (FIX PRINCIPAL)
     // =========================
-    public boolean ajouterProduit(String token, int produitId, int quantite) {
-
-        try {
-            int userId = SessionService.getCurrentUserId();
-
-            if (userId <= 0) {
-                System.out.println("❌ userId invalide !");
-                return false;
-            }
-
-            JsonObject data = new JsonObject();
-            data.addProperty("userId", userId);
-            data.addProperty("produitId", produitId);
-            data.addProperty("quantite", quantite);
-
-            System.out.println("📤 JSON ENVOYÉ = " + data);
-
-            Message request = new Message(
-                    "ADD_TO_CART",
-                    "REQ_ADD",
-                    "",
-                    data.toString(),
-                    ""
-            );
-
-            request.setToken(token);
-
-            Message response = client.sendRequest(request);
-
-            return response != null && "SUCCESS".equals(response.getStatus());
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    // =========================
-    // GET PANIER
-    // =========================
-    public List<PanierItem> getPanier(String token) {
+    public List<PanierItem> getPanier() {
 
         List<PanierItem> list = new ArrayList<>();
 
         try {
             int userId = SessionService.getCurrentUserId();
 
-            if (userId <= 0) return list;
+            if (userId <= 0) {
+                System.out.println("❌ utilisateur non connecté !");
+                return list;
+            }
 
             JsonObject data = new JsonObject();
             data.addProperty("userId", userId);
@@ -80,8 +43,6 @@ public class PanierService {
                     data.toString(),
                     ""
             );
-
-            request.setToken(token);
 
             Message response = client.sendRequest(request);
 
@@ -108,45 +69,94 @@ public class PanierService {
         }
 
         return list;
-        
     }
- // =========================
- // UPDATE QUANTITE
- // =========================
- public boolean updateQuantite(String token, int produitId, int quantite) {
 
-     try {
-         int userId = SessionService.getCurrentUserId();
+    // =========================
+    // UPDATE
+    // =========================
+    public boolean updateQuantite(int produitId, int quantite) {
 
-         if (userId <= 0) {
-             System.out.println("❌ userId invalide !");
-             return false;
-         }
+        try {
+            int userId = SessionService.getCurrentUserId();
 
-         JsonObject data = new JsonObject();
-         data.addProperty("userId", userId);
-         data.addProperty("produitId", produitId);
-         data.addProperty("quantite", quantite);
+            JsonObject data = new JsonObject();
+            data.addProperty("userId", userId);
+            data.addProperty("produitId", produitId);
+            data.addProperty("quantite", quantite);
 
-         System.out.println("📤 UPDATE JSON = " + data);
+            Message request = new Message(
+                    "UPDATE_CART",
+                    "REQ_UPDATE",
+                    "",
+                    data.toString(),
+                    ""
+            );
 
-         Message request = new Message(
-                 "UPDATE_CART",
-                 "REQ_UPDATE",
-                 "",
-                 data.toString(),
-                 ""
-         );
+            Message response = client.sendRequest(request);
 
-         request.setToken(token);
+            return response != null && "SUCCESS".equals(response.getStatus());
 
-         Message response = client.sendRequest(request);
+        } catch (Exception e) {
+            return false;
+        }
+    }
 
-         return response != null && "SUCCESS".equals(response.getStatus());
+    // =========================
+    // DELETE
+    // =========================
+    public boolean supprimerProduit(int produitId) {
 
-     } catch (Exception e) {
-         e.printStackTrace();
-         return false;
-     }
- }
+        try {
+            int userId = SessionService.getCurrentUserId();
+
+            JsonObject data = new JsonObject();
+            data.addProperty("userId", userId);
+            data.addProperty("produitId", produitId);
+
+            Message request = new Message(
+                    "REMOVE_FROM_CART",
+                    "REQ_REMOVE",
+                    "",
+                    data.toString(),
+                    ""
+            );
+
+            Message response = client.sendRequest(request);
+
+            return response != null && "SUCCESS".equals(response.getStatus());
+
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // =========================
+    // ADD
+    // =========================
+    public boolean ajouterProduit(int produitId, int quantite) {
+
+        try {
+            int userId = SessionService.getCurrentUserId();
+
+            JsonObject data = new JsonObject();
+            data.addProperty("userId", userId);
+            data.addProperty("produitId", produitId);
+            data.addProperty("quantite", quantite);
+
+            Message request = new Message(
+                    "ADD_TO_CART",
+                    "REQ_ADD",
+                    "",
+                    data.toString(),
+                    ""
+            );
+
+            Message response = client.sendRequest(request);
+
+            return response != null && "SUCCESS".equals(response.getStatus());
+
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }

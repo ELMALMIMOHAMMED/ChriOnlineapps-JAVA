@@ -16,7 +16,7 @@ public class MainFrame extends JFrame {
 
     private Client client;
 
-    // 🔥 page demandée après login
+    // page demandée après login
     private String pendingPage = null;
 
     public MainFrame() {
@@ -31,6 +31,9 @@ public class MainFrame extends JFrame {
         // =========================
         client = new Client("127.0.0.1", 6000);
 
+        // =========================
+        // LAYOUT
+        // =========================
         layout = new CardLayout();
         container = new JPanel(layout);
 
@@ -41,6 +44,7 @@ public class MainFrame extends JFrame {
         HomePanel homePanel = new HomePanel(this);
         productsPanel = new ProductsPanel(this);
         cartPanel = new CartPanel(this);
+        RegisterPanel registerPanel = new RegisterPanel(this);
 
         // =========================
         // ADD PAGES
@@ -49,10 +53,12 @@ public class MainFrame extends JFrame {
         container.add(homePanel, "HOME");
         container.add(productsPanel, "PRODUCTS");
         container.add(cartPanel, "CART");
-
+        container.add(registerPanel, "REGISTER");
         add(container);
 
-        // ✅ START sans login
+        // =========================
+        // START
+        // =========================
         showPage("HOME");
     }
 
@@ -61,19 +67,33 @@ public class MainFrame extends JFrame {
     // =========================
     public void showPage(String name) {
 
-        if ("CART".equals(name)) {
-            cartPanel.reload(); // ✅ FIX IMPORTANT
-        }
+        // 🔥 Sécurité null
+        if (name == null) return;
 
-        if ("PRODUCTS".equals(name)) {
-            productsPanel.reload(); // OK
+        switch (name) {
+
+            case "CART":
+                if (cartPanel != null) {
+                    cartPanel.reload();
+                }
+                break;
+
+            case "PRODUCTS":
+                if (productsPanel != null) {
+                    productsPanel.reload();
+                }
+                break;
         }
 
         layout.show(container, name);
+
+        // 🔥 refresh UI (évite bugs affichage)
+        container.revalidate();
+        container.repaint();
     }
 
     // =========================
-    // 🔐 LOGIN À LA DEMANDE
+    // LOGIN À LA DEMANDE
     // =========================
     public void requireLogin(String targetPage) {
         this.pendingPage = targetPage;
@@ -102,7 +122,7 @@ public class MainFrame extends JFrame {
     // =========================
     public void refreshCart() {
         if (cartPanel != null) {
-            cartPanel.reload(); // ✅ FIX IMPORTANT
+            cartPanel.reload();
         }
     }
 
